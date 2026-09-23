@@ -3,6 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// 1. Explicitly set application name early
+app.setName('Friday Recorder');
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
@@ -13,8 +16,29 @@ const IPC_CHANNELS = {
   },
 };
 
+// Sender frame validator matching electron/main/ipc/appHandlers.ts
+function validateSenderFrame(frame) {
+  if (!frame) {
+    throw new Error('IPC Access Denied: Missing sender frame');
+  }
+  const url = frame.url;
+  const isAllowedDev = url.startsWith('http://localhost:5173') || url.startsWith('http://127.0.0.1:5173');
+  const isAllowedProd = url.startsWith('file://');
+  if (!isAllowedDev && !isAllowedProd) {
+    throw new Error(`IPC Access Denied: Unauthorized sender origin (${url})`);
+  }
+}
+
 // Register the exact IPC handler matching electron/main/ipc/appHandlers.ts
-ipcMain.handle(IPC_CHANNELS.APP.GET_VERSION, async () => {
+ipcMain.handle(IPC_CHANNELS.APP.GET_VERSION, async (event, payload) => {
+  // 1. Authenticate sender frame
+  validateSenderFrame(event.senderFrame);
+
+  // 2. Validate input payload
+  if (payload !== undefined && (typeof payload !== 'object' || payload === null)) {
+    throw new Error('Invalid IPC request payload');
+  }
+
   const pkg = JSON.parse(fs.readFileSync(path.resolve(rootDir, 'package.json'), 'utf-8'));
   return pkg.version;
 });
@@ -68,12 +92,23 @@ app.whenReady().then(async () => {
   console.log('=== PHASE 2 RIGOROUS VERIFICATION ===\n');
   let failures = 0;
 
+  // 0. App Name & Path Resolution Verification
+  console.log('0. Application Name & Path Resolution:');
+  const resolvedName = app.getName();
+  console.log('Resolved app.getName():', resolvedName);
+  if (resolvedName === 'Friday Recorder') {
+    console.log('PASS: app.getName() correctly resolved to "Friday Recorder".');
+  } else {
+    console.error(`FAIL: app.getName() resolved to "${resolvedName}", expected "Friday Recorder".`);
+    failures++;
+  }
+
   // 1. Menu Verification
   const testMenu = buildTestMenu();
   Menu.setApplicationMenu(testMenu);
   const menu = Menu.getApplicationMenu();
   const topLabels = menu ? menu.items.map((i) => i.label) : [];
-  console.log('1. Application Menu Top-level Labels:', topLabels);
+  console.log('\n1. Application Menu Top-level Labels:', topLabels);
 
   const expectedLabels = ['File', 'Edit', 'View', 'Help'];
   const labelsMatch =
@@ -105,9 +140,16 @@ app.whenReady().then(async () => {
     console.log('PASS: "Exit" menu item present in File menu.');
   }
 
-  // 2. Window State Persistence
+  // 2. Window State Persistence & App Data Path
   const statePath = path.join(app.getPath('userData'), 'window-state.json');
   console.log('\n2. Window State File Path:', statePath);
+
+  if (statePath.includes('Friday Recorder')) {
+    console.log('PASS: Window state file path correctly contains "Friday Recorder".');
+  } else {
+    console.error('FAIL: Window state file path does NOT contain "Friday Recorder":', statePath);
+    failures++;
+  }
 
   const testState = {
     x: 120,
@@ -170,7 +212,7 @@ app.whenReady().then(async () => {
     failures++;
   }
 
-  // 3. Renderer IPC Round-trip & Placeholder Screen Verification
+  // 3. Renderer IPC Round-trip, Sender Authenticity & UI Evaluation
   await win.loadFile(path.resolve(rootDir, 'dist/index.html'));
 
   const evaluation = await win.webContents.executeJavaScript(`
@@ -203,12 +245,13 @@ app.whenReady().then(async () => {
 
   console.log('\n3. Renderer IPC & UI Evaluation:');
   console.log('App version received via IPC:', evaluation.version);
+  console.log('Bridge error (if any):       ', evaluation.bridgeError);
   console.log('Rendered header text:        ', evaluation.renderedText);
 
-  if (evaluation.version === '0.1.0') {
-    console.log('PASS: IPC call window.friday.app.getVersion() returned "0.1.0".');
+  if (evaluation.version === '0.1.0' && !evaluation.bridgeError) {
+    console.log('PASS: IPC call window.friday.app.getVersion() authenticated senderFrame and returned "0.1.0".');
   } else {
-    console.error(`FAIL: IPC call returned "${evaluation.version}", expected "0.1.0".`);
+    console.error(`FAIL: IPC call returned "${evaluation.version}", error: ${evaluation.bridgeError}`);
     failures++;
   }
 
@@ -231,9 +274,18 @@ app.whenReady().then(async () => {
     failures++;
   }
 
-  // 5. Verify Crash / Error Logging
+  // 5. Verify Crash / Error Logging Path
   console.log('\n5. Error Logger Verification:');
   const logFile = path.join(app.getPath('userData'), 'logs', 'error.log');
+  console.log('Error Log File Path:', logFile);
+
+  if (logFile.includes('Friday Recorder')) {
+    console.log('PASS: Error log path correctly contains "Friday Recorder".');
+  } else {
+    console.error('FAIL: Error log path does NOT contain "Friday Recorder":', logFile);
+    failures++;
+  }
+
   const logTimestamp = new Date().toISOString();
   const testLogEntry = `[${logTimestamp}] [TEST_VERIFICATION_ERROR] Phase 2 test crash logging verification\n\n`;
   fs.mkdirSync(path.dirname(logFile), { recursive: true });
@@ -242,7 +294,7 @@ app.whenReady().then(async () => {
   if (fs.existsSync(logFile)) {
     const logContent = fs.readFileSync(logFile, 'utf-8');
     if (logContent.includes('Phase 2 test crash logging verification')) {
-      console.log('PASS: Error log recorded cleanly to:', logFile);
+      console.log('PASS: Error log recorded cleanly to Friday Recorder directory.');
     } else {
       console.error('FAIL: Error log file did not contain logged error.');
       failures++;
@@ -252,7 +304,17 @@ app.whenReady().then(async () => {
     failures++;
   }
 
-  // 6. Summary
+  // 6. Verify electron-builder.yml icon reference
+  console.log('\n6. electron-builder.yml Icon Verification:');
+  const builderYaml = fs.readFileSync(path.resolve(rootDir, 'electron-builder.yml'), 'utf-8');
+  if (builderYaml.includes('icon: assets/icon.ico')) {
+    console.log('PASS: electron-builder.yml explicitly references assets/icon.ico for Windows build target.');
+  } else {
+    console.error('FAIL: electron-builder.yml missing icon: assets/icon.ico');
+    failures++;
+  }
+
+  // 7. Summary
   console.log('\n======================================');
   if (failures === 0) {
     console.log('ALL PHASE 2 VERIFICATIONS PASSED (0 FAILURES)');

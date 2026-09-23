@@ -1,5 +1,6 @@
 {
   "name": "friday-recorder",
+  "productName": "Friday Recorder",
   "version": "0.1.0",
   "description": "Windows desktop screen recording + non-destructive video editing application",
   "main": "dist-electron/main/index.js",

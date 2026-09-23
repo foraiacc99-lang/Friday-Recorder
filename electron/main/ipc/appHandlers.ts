@@ -12,7 +12,6 @@ export function getAppVersion(): string {
   if (cachedVersion) return cachedVersion;
 
   try {
-    // Locate package.json relative to bundled dist-electron or source
     const candidates = [
       path.resolve(__dirname, '../../package.json'),
       path.resolve(__dirname, '../package.json'),
@@ -38,12 +37,32 @@ export function getAppVersion(): string {
 }
 
 /**
- * Registers application IPC handlers with basic input validation.
+ * Validates that the IPC invocation originates from a trusted local origin.
+ */
+export function validateSenderFrame(frame: Electron.WebFrameMain | null): void {
+  if (!frame) {
+    throw new Error('IPC Access Denied: Missing sender frame');
+  }
+
+  const url = frame.url;
+  const isAllowedDev = url.startsWith('http://localhost:5173') || url.startsWith('http://127.0.0.1:5173');
+  const isAllowedProd = url.startsWith('file://');
+
+  if (!isAllowedDev && !isAllowedProd) {
+    throw new Error(`IPC Access Denied: Unauthorized sender origin (${url})`);
+  }
+}
+
+/**
+ * Registers application IPC handlers with basic input validation and sender frame authenticity checks.
  * Phase 2 proof-of-pattern call: app.getVersion from package.json.
  */
 export function registerAppHandlers(): void {
-  ipcMain.handle(IPC_CHANNELS.APP.GET_VERSION, async (_event, payload?: unknown): Promise<string> => {
-    // Basic input validation
+  ipcMain.handle(IPC_CHANNELS.APP.GET_VERSION, async (event, payload?: unknown): Promise<string> => {
+    // 1. Authenticate sender frame
+    validateSenderFrame(event.senderFrame);
+
+    // 2. Validate input payload
     if (payload !== undefined && (typeof payload !== 'object' || payload === null)) {
       throw new Error('Invalid IPC request payload');
     }

@@ -3,6 +3,9 @@ import { initLogger } from './utils/logger';
 import { registerIpcHandlers } from './ipc';
 import { createMainWindow, focusMainWindow, getMainWindow, setupApplicationMenu } from './windows';
 
+// Explicitly set application name early to ensure userData paths resolve correctly to Friday Recorder
+app.setName('Friday Recorder');
+
 // Initialize crash and error logging early
 initLogger();
 
