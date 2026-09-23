@@ -13,3 +13,4 @@ const bridgeApi: FridayBridgeApi = {
 };
 
 contextBridge.exposeInMainWorld('friday', bridgeApi);
+contextBridge.exposeInMainWorld('electronAPI', bridgeApi);

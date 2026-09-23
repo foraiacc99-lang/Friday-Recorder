@@ -22,5 +22,6 @@ export interface FridayBridgeApi {
 declare global {
   interface Window {
     friday: FridayBridgeApi;
+    electronAPI: FridayBridgeApi;
   }
 }
