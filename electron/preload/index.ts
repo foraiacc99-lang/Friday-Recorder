@@ -1,14 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AppInfo, FridayBridgeApi } from '../../shared/types';
+import { IPC_CHANNELS } from '../../shared/events';
+import type { FridayBridgeApi } from '../../shared/types';
 
 /**
- * Minimal typed IPC bridge. Exposes strictly safe plumbing.
+ * Minimal typed IPC bridge for Phase 2.
+ * Exposes strictly safe plumbing for app.getVersion.
  * Raw ipcRenderer or Node modules are NEVER exposed to the renderer.
  */
 const bridgeApi: FridayBridgeApi = {
   app: {
-    getInfo: (): Promise<AppInfo> => ipcRenderer.invoke('app:getInfo'),
-    ping: (): Promise<string> => ipcRenderer.invoke('app:ping'),
+    getVersion: (): Promise<string> => ipcRenderer.invoke(IPC_CHANNELS.APP.GET_VERSION),
   },
 };
 

@@ -1,85 +1,39 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
-import path from 'path';
-import type { AppInfo } from '../../shared/types';
+import { app } from 'electron';
+import { initLogger } from './utils/logger';
+import { registerIpcHandlers } from './ipc';
+import { createMainWindow, focusMainWindow, getMainWindow, setupApplicationMenu } from './windows';
 
-let mainWindow: BrowserWindow | null = null;
+// Initialize crash and error logging early
+initLogger();
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
-function registerIpcHandlers(): void {
-  ipcMain.handle('app:getInfo', (): AppInfo => {
-    return {
-      name: 'Friday Recorder',
-      version: app.getVersion(),
-      isPackaged: app.isPackaged,
-      platform: process.platform,
-    };
-  });
-
-  ipcMain.handle('app:ping', (): string => {
-    return 'pong';
-  });
-}
-
-function createWindow(): void {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    show: false,
-    backgroundColor: '#0f172a',
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-    },
-  });
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    // Open DevTools in dev mode for easy inspection
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
-  }
-}
-
-// Ensure single instance of Friday Recorder
+// Enforce single-instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
+    // Focus the existing window when a second instance launch is attempted
+    focusMainWindow();
   });
 
   app.whenReady().then(() => {
+    setupApplicationMenu(isDev);
     registerIpcHandlers();
-    createWindow();
+    createMainWindow(isDev);
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
+      // Re-create window on macOS dock click when no windows exist
+      if (getMainWindow() === null) {
+        createMainWindow(isDev);
       }
     });
   });
 
   app.on('window-all-closed', () => {
+    // Standard cross-platform quit behavior (quit on non-macOS platforms)
     if (process.platform !== 'darwin') {
       app.quit();
     }

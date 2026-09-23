@@ -4,13 +4,15 @@ Friday Recorder is a Windows desktop screen recording and non-destructive video 
 
 ## Phase Status
 
-**Current Phase: Phase 1 — Project Foundation (Completed)**
-- Core Electron desktop window shell with React 18 and Vite.
-- Strict TypeScript configuration across main, preload, renderer, and shared modules.
-- Secure Electron execution: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
-- Typed IPC bridge plumbing with explicit context isolation (`window.friday`).
-- Clean modular directory structure ready to scale into capture, editing, and timeline phases.
-- Build tooling and developer scripts configured for Windows x64.
+**Current Phase: Phase 2 — Electron Desktop Shell (Completed)**
+- Modular window management (`electron/main/windows/mainWindow.ts`).
+- Persistent window state (size, position, and maximize state restored between launches via local JSON).
+- Single-instance enforcement (`app.requestSingleInstanceLock`) focusing existing window on subsequent launch attempts.
+- Native application menu with standard File, Edit, View, and Help ("About Friday Recorder" dialog).
+- Crash and unhandled rejection logging to sanitized local error log (`error.log`).
+- Typed IPC architecture pattern with single proof-of-concept call (`window.friday.app.getVersion()`).
+
+> **Note on App Icon:** The icon in `assets/icon.ico` is a placeholder icon for development. Real branding and custom icon work will be established in a future phase.
 
 ## Scripts & Usage
 
