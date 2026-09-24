@@ -1,11 +1,13 @@
 import { registerAppHandlers } from './appHandlers';
+import { registerCaptureHandlers } from './captureHandlers';
 
 /**
  * Central registry for all IPC handlers.
- * Later phases (capture, recording, etc.) will plug into this registry.
  */
 export function registerIpcHandlers(): void {
   registerAppHandlers();
+  registerCaptureHandlers();
 }
 
 export * from './appHandlers';
+export * from './captureHandlers';

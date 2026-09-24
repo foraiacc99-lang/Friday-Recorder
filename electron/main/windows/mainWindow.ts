@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import path from 'path';
+import { getCaptureProvider } from '../capture';
 import { loadWindowState, saveWindowState } from './windowState';
 
 let mainWindow: BrowserWindow | null = null;
@@ -67,6 +68,9 @@ export function createMainWindow(isDev: boolean): BrowserWindow {
     if (mainWindow && !mainWindow.isDestroyed()) {
       saveWindowState(mainWindow);
     }
+    getCaptureProvider().stopCapture().catch((err) => {
+      console.error('[MainWindow] Error stopping capture on window close:', err);
+    });
   });
 
   mainWindow.once('ready-to-show', () => {

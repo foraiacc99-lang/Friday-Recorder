@@ -4,13 +4,17 @@ Friday Recorder is a Windows desktop screen recording and non-destructive video 
 
 ## Phase Status
 
-**Current Phase: Phase 2 — Electron Desktop Shell (Completed)**
-- Modular window management (`electron/main/windows/mainWindow.ts`).
-- Persistent window state (size, position, and maximize state restored between launches via local JSON).
-- Single-instance enforcement (`app.requestSingleInstanceLock`) focusing existing window on subsequent launch attempts.
-- Native application menu with standard File, Edit, View, and Help ("About Friday Recorder" dialog).
-- Crash and unhandled rejection logging to sanitized local error log (`error.log`).
-- Typed IPC architecture pattern with single proof-of-concept call (`window.friday.app.getVersion()`).
+**Current Phase: Phase 3 — Windows Screen Capture (Completed & Verified)**
+- Abstracted `CaptureProvider` interface (`electron/main/capture/CaptureProvider.ts`).
+- Concrete `WindowsCaptureProvider` (`electron/main/capture/WindowsCaptureProvider.ts`) with Electron `desktopCapturer` + Chromium WebRTC engine.
+- Justification and tradeoffs documented in `ARCHITECTURE_NOTES.md`.
+- Multi-monitor and DPI scaling enrichment from `electron.screen`.
+- Strongly typed capture IPC bridge (`capture:listSources`, `capture:start`, `capture:stop`, `capture:getStatus`) with sender origin validation.
+- Live video frame preview test UI with real-time stream resolution and frame rate diagnostics.
+- Automatic resource cleanup on window destruction and app quit.
+- Graceful handling of mid-capture stream termination (`track.onended`).
+
+**Previous Phase: Phase 2 — Electron Desktop Shell (Completed)**
 
 > **Note on App Icon:** The icon in `assets/icon.ico` is a placeholder icon for development. Real branding and custom icon work will be established in a future phase.
 

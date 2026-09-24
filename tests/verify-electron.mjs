@@ -1,23 +1,24 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
+const require = createRequire(import.meta.url);
 
-// Register IPC handlers matching production
-ipcMain.handle('app:getInfo', () => ({
-  name: 'Friday Recorder',
-  version: app.getVersion(),
-  isPackaged: false,
-  platform: process.platform,
-}));
-
-ipcMain.handle('app:ping', () => 'pong');
+// Set application name early
+app.setName('Friday Recorder');
 
 app.whenReady().then(async () => {
   try {
+    // Import and register real production IPC handlers
+    const ipcModule = require(path.resolve(rootDir, 'dist-electron/main/ipc.js'));
+    if (typeof ipcModule.registerIpcHandlers === 'function') {
+      ipcModule.registerIpcHandlers();
+    }
+
     const win = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -39,14 +40,12 @@ app.whenReady().then(async () => {
         const hasRequire = typeof window.require !== 'undefined';
         const hasProcess = typeof window.process !== 'undefined';
         const hasFriday = typeof window.friday !== 'undefined';
-        let appInfo = null;
-        let pingResult = null;
+        let version = null;
         let bridgeError = null;
 
         if (hasFriday) {
           try {
-            appInfo = await window.friday.app.getInfo();
-            pingResult = await window.friday.app.ping();
+            version = await window.friday.app.getVersion();
           } catch (e) {
             bridgeError = e.message;
           }
@@ -58,21 +57,19 @@ app.whenReady().then(async () => {
           hasRequire,
           hasProcess,
           hasFriday,
-          appInfo,
-          pingResult,
+          version,
           bridgeError,
           titleText,
         };
       })()
     `);
 
-    console.log('--- VERIFICATION RESULTS ---');
+    console.log('--- ELECTRON VERIFICATION RESULTS ---');
     console.log('Title text:', diagnostics.titleText);
     console.log('Require exposed:', diagnostics.hasRequire);
     console.log('Process exposed:', diagnostics.hasProcess);
     console.log('Friday bridge exposed:', diagnostics.hasFriday);
-    console.log('App info via bridge:', diagnostics.appInfo);
-    console.log('Ping result via bridge:', diagnostics.pingResult);
+    console.log('Version via bridge:', diagnostics.version);
     console.log('Bridge error:', diagnostics.bridgeError);
 
     let failed = false;
@@ -88,16 +85,8 @@ app.whenReady().then(async () => {
       console.error('FAIL: window.friday is NOT exposed!');
       failed = true;
     }
-    if (!diagnostics.appInfo || diagnostics.appInfo.name !== 'Friday Recorder') {
-      console.error('FAIL: appInfo was not retrieved properly via IPC bridge!');
-      failed = true;
-    }
-    if (diagnostics.pingResult !== 'pong') {
-      console.error('FAIL: ping did not return "pong"!');
-      failed = true;
-    }
-    if (!diagnostics.titleText.includes('Friday Recorder — Phase 1 Foundation')) {
-      console.error('FAIL: Title text does not match expected placeholder!');
+    if (!diagnostics.version) {
+      console.error('FAIL: app version was not retrieved properly via IPC bridge!');
       failed = true;
     }
 

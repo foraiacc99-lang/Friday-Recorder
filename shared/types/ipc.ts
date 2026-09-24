@@ -1,6 +1,13 @@
+import type {
+  CaptureOptions,
+  CaptureSessionInfo,
+  CaptureSource,
+  CaptureSourceType,
+  CaptureStatus,
+} from './capture';
+
 /**
  * Strongly-typed IPC bridge contract exposed via contextBridge.
- * Phase 2 Shell Scaffolding — app.getVersion single proof-of-pattern call.
  */
 export interface AppGetVersionResponse {
   version: string;
@@ -9,6 +16,12 @@ export interface AppGetVersionResponse {
 export interface FridayBridgeApi {
   app: {
     getVersion: () => Promise<string>;
+  };
+  capture: {
+    listSources: (types?: CaptureSourceType[]) => Promise<CaptureSource[]>;
+    startCapture: (sourceId: string, options?: CaptureOptions) => Promise<CaptureSessionInfo>;
+    stopCapture: () => Promise<void>;
+    getStatus: () => Promise<CaptureStatus>;
   };
 }
 
