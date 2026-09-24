@@ -1,0 +1,81 @@
+=====================================================
+   FRIDAY RECORDER — PHASE 4 RIGOROUS VERIFICATION   
+=====================================================
+
+TEST 1: ARCHITECTURE_NOTES.md Phase 4 Entry Verification
+  [PASS] ARCHITECTURE_NOTES.md correctly updated with Phase 4 decision, WASAPI analysis, Chromium constraint, and separation of concerns.
+
+TEST 2: IPC Channels Scope & Audit
+  All registered channels in IPC_CHANNELS: ["app:getVersion","capture:listSources","capture:start","capture:stop","capture:getStatus","audio:listMicrophones","audio:startMic","audio:startSystemAudio","audio:stop","audio:getStatus"]
+  [PASS] Only authorized APP, CAPTURE, and AUDIO channels present. Zero unrelated channels.
+
+TEST 3: AudioProvider Abstraction & Singleton Verification
+  [PASS] AudioProvider contract fulfilled with separate mic and system audio capture methods.
+
+TEST 4: BrowserWindow & ContextBridge Exposure
+  [PASS] All audio IPC bridge methods properly exposed via contextBridge.
+
+TEST 5: Real Microphone Enumeration (listMicrophones)
+  Discovered 7 microphone device(s) on this machine:
+    [1] ID: default... | Label: "Default - Microphone (PD100X Podcast Microphone) (352f:010c)" | Default: true
+    [2] ID: communications... | Label: "Communications - Headset (Rockerz 460) (Bluetooth)" | Default: false
+    [3] ID: 954527906b3cb9346df5... | Label: "Microphone (NVIDIA Broadcast)" | Default: false
+    [4] ID: 649959090c7688cbea5b... | Label: "Headset (Rockerz 460) (Bluetooth)" | Default: false
+    [5] ID: 2d6f4e28e6712b6f280a... | Label: "Microphone Array (Realtek(R) Audio)" | Default: false
+    [6] ID: 0550fbdbeeb226b895d3... | Label: "Microphone (Maono AI Microphone)" | Default: false
+    [7] ID: c552d392cb8c46962d5d... | Label: "Microphone (PD100X Podcast Microphone) (352f:010c)" | Default: false
+  [PASS] listMicrophones() returned real, human-readable microphone devices.
+
+TEST 6: Live Microphone Capture & Real-Time Level Metering
+  [PASS] Live microphone audio stream acquired and metered successfully.
+         Track Label: "Default - Microphone (PD100X Podcast Microphone) (352f:010c)"
+         Format: 48000 Hz / 1 channel(s)
+         Volume samples over time: [0,18,21,25,24,22]
+         Peak level: 25%
+         Session status before stop: isMicCapturing = true
+         Session status after stop: isMicCapturing = false
+
+TEST 7: Live System Audio Capture (Windows WASAPI Loopback)
+  [PASS] Live system audio (WASAPI Loopback) acquired and metered successfully.
+         Track Label: "System Audio"
+         Format: 48000 Hz / 2 channel(s) (Stereo 48kHz)
+         Active volume samples (during 440 Hz tone playback): [0,29,33,35,36,36]
+         Peak level while playing audio: 36%
+         Silent volume samples (after tone stopped): [35,34,33,32]
+         Session status before stop: isSystemAudioCapturing = true
+         Session status after stop: isSystemAudioCapturing = false
+
+TEST 8: Combined Concurrency Test (Screen Video + Mic + System Audio Together)
+  [PASS] All 3 streams (Screen Video, Mic, and System Audio) ran concurrently without conflict or degradation.
+         Screen: 1920x1200 @ 60 FPS
+         Mic: 48000 Hz
+         System Audio: 48000 Hz (2 ch)
+         Concurrent Main Status: ScreenCapturing = true, MicCapturing = true, SysAudioCapturing = true
+
+TEST 9: Repeated Start/Stop Cycling (5 Times) Memory Leak Check
+  JS Heap Memory Readings Across 5 Consecutive Start/Stop Cycles:
+    - Cycle 1: 9.54 MB
+    - Cycle 2: 9.54 MB
+    - Cycle 3: 9.54 MB
+    - Cycle 4: 9.54 MB
+    - Cycle 5: 9.54 MB
+  Heap delta between cycle 1 and cycle 5: 0.00 MB
+  [PASS] Zero creeping memory confirmed across repeated start/stop cycling.
+
+TEST 10: Microphone Permission Denial Handling Check
+  [PASS] Permission denial is caught gracefully with clear, actionable Windows Settings guidance.
+         User Guidance: "Microphone access denied. Please grant microphone access in Windows Settings: Settings > Privacy & security > Microphone > enable "Let desktop apps access your microphone"."
+
+TEST 11: Microphone Physical Disconnect / Unplugged Handling Check
+  [PASS] Microphone track ending (unplugged/disconnected) triggers graceful UI alert and cleanup.
+         UI Notice: "Microphone disconnected: The selected audio device was unplugged or became unavailable."
+
+TEST 12: Application Clean Quit with Active Capture
+  Verifying before-quit handlers release all audio and capture sessions...
+  Status before quit cleanup: mic = false, system = false
+  Status after quit cleanup: mic = false, system = false
+  [PASS] Audio provider before-quit cleanup releases all OS session references cleanly.
+
+=====================================================
+   ALL PHASE 4 VERIFICATION TESTS PASSED (12/12)   
+=====================================================

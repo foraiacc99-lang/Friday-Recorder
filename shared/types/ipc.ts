@@ -5,6 +5,12 @@ import type {
   CaptureSourceType,
   CaptureStatus,
 } from './capture';
+import type {
+  AudioCaptureTarget,
+  AudioDeviceInfo,
+  AudioSessionInfo,
+  AudioStatus,
+} from './audio';
 
 /**
  * Strongly-typed IPC bridge contract exposed via contextBridge.
@@ -22,6 +28,13 @@ export interface FridayBridgeApi {
     startCapture: (sourceId: string, options?: CaptureOptions) => Promise<CaptureSessionInfo>;
     stopCapture: () => Promise<void>;
     getStatus: () => Promise<CaptureStatus>;
+  };
+  audio: {
+    listMicrophones: () => Promise<AudioDeviceInfo[]>;
+    startMicCapture: (deviceId?: string) => Promise<AudioSessionInfo>;
+    startSystemAudioCapture: () => Promise<AudioSessionInfo>;
+    stop: (target?: AudioCaptureTarget) => Promise<void>;
+    getStatus: () => Promise<AudioStatus>;
   };
 }
 

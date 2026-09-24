@@ -44,6 +44,17 @@ async function buildElectron() {
       minify: !isDev,
     }),
     esbuild.build({
+      entryPoints: [path.resolve(rootDir, 'electron/main/audio/index.ts')],
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+      target: 'node20',
+      external: ['electron'],
+      outfile: path.resolve(rootDir, 'dist-electron/main/audio.js'),
+      sourcemap: isDev ? 'inline' : false,
+      minify: !isDev,
+    }),
+    esbuild.build({
       entryPoints: [path.resolve(rootDir, 'electron/main/ipc/index.ts')],
       bundle: true,
       platform: 'node',
