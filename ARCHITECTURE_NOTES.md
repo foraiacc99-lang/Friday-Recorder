@@ -104,3 +104,48 @@ Per the Friday Recorder architectural guidelines, microphone capture and system 
 - Separate lifecycle tracking: `activeMicSession` vs. `activeSystemAudioSession`.
 - Separate test UI meters and toggle controls: microphone and system audio can be started, adjusted, and stopped independently without touching or resetting each other.
 
+---
+
+## Phase 5: Recording Pipeline Architecture Decision (Encoding, Muxing & Orchestration)
+
+### Context
+Phase 5 orchestrates screen capture (Phase 3) and audio capture (microphone + WASAPI system loopback, Phase 4) into an integrated recording pipeline that encodes frames and audio in real time and writes a playable video file directly to disk (`Documents/Friday Recorder/Recordings/`).
+
+We evaluated two architectural strategies for combining and encoding screen video, microphone audio, and desktop system audio:
+1. **Chromium `MediaRecorder` API with Web Audio API Real-time Audio Mixing & Streaming Disk Writer.**
+2. **Piping Raw Uncompressed Frames & PCM Buffers over Electron IPC to a Spawned FFmpeg Child Process.**
+
+---
+
+### Technical Evaluation & Trade-off Matrix
+
+| Dimension | Option 1: Chromium `MediaRecorder` + Web Audio API Mixing | Option 2: Piping Raw Frames to Child Process FFmpeg |
+| :--- | :--- | :--- |
+| **GPU Acceleration & Zero-Copy Pipeline** | **Zero-Copy GPU Compositing:** Screen frames flow directly inside Chromium's DirectX/Direct3D GPU pipeline to hardware encoders (NVENC, Intel QuickSync, AMD AMF, or software VP9/VP8). Frames are never copied over IPC or Node buffer boundaries. | **Severe IPC Overhead:** A 1080p60 uncompressed RGBA/YUV stream generates ~1920 × 1080 × 4 × 60 = **~497 MB/s** of raw frame data. Marshaling ~500 MB/s across Electron IPC to Node C++ buffers and piping to `stdin` causes extreme CPU spikes, GC thrashing, and frame drops. |
+| **Audio-Video Synchronization** | **Hardware-Clocked AV Sync:** Chromium's WebRTC media engine aligns audio and video packets using hardware-synchronized presentation timestamps (PTS). Web Audio API destination tracks are locked to the audio hardware sample clock (48 kHz). | **Manual Drift Compensation:** Requires manual presentation timestamping in Node.js, drift compensation algorithms between the audio clock and display refresh pacing, and queue buffer management. |
+| **Container & Crash Resilience** | **Streaming Cluster Container (WebM/EBML):** WebM files are structured in appendable clusters. Chunks are streamed to disk every 500ms via `fs.WriteStream`. If the application or system is killed mid-recording, all flushed clusters remain completely valid and playable up to the last second. | **Container Corruption Risk:** Standard MP4 requires a trailing `moov` atom written at finalize time. If a recording terminates abruptly without clean finalization, naive MP4 files are completely corrupt and unplayable without specialized recovery tooling. |
+| **Audio Source Mixing** | **Web Audio API Graph:** Dynamically mixes microphone input (USB/headset) and system loopback (WASAPI) through dedicated `GainNode` stages into a single 48 kHz stereo destination track with zero latency and zero IPC serialization. | Requires manual software PCM mixing (sample-by-sample 16/32-bit float addition with clipping/limiting) in Node or complex FFmpeg filter graphs (`amix=inputs=2`). |
+| **External Dependencies** | **Zero External Toolchain Dependencies:** Uses Electron's built-in Chromium media stack and standard Node.js `fs` streams. Works out of the box on all Windows 10/11 installations without requiring external binaries bundled or installed. | Requires packaging full FFmpeg static binaries (~80-100 MB installer bloat), managing child process lifecycle, and handling process crashes. Note: Full FFmpeg export is Phase 14 (Export). |
+| **Seekability & Playback Compatibility** | Streaming WebM files natively play in VLC, modern Windows Media Player, Edge, Chrome, and video editors. By patching the EBML `Duration` header on finalization (`WebmPatcher`), all media players and `ffprobe` report the exact duration and support smooth seekability. | Direct MP4 container with seek index, but subject to the high serialization overhead noted above. |
+
+---
+
+### Decision: Chromium `MediaRecorder` + Web Audio API Mixing + Streaming File Storage
+
+**Selected Strategy:** Option 1 (`MediaRecorder` API with Web Audio API mixing and chunked disk streaming).
+
+**Justification:**
+1. **Zero IPC Frame Overhead:** Screen frames remain in hardware/DirectX surfaces and are encoded directly by Chromium's media engine at up to 60 FPS without transferring hundreds of megabytes per second across Electron IPC.
+2. **Standard-Compliant Audio Mixing:** The Web Audio API (`AudioContext`, `createMediaStreamDestination()`, `GainNode`) mixes live microphone voice narration and desktop WASAPI loopback audio into a single unified 48 kHz stereo Opus track in lockstep with the system audio clock.
+3. **Continuous Disk Streaming & Fault Tolerance:** Chunks are emitted every 500ms and written directly to disk via `fs.WriteStream`. If the recording source closes (e.g. window closed) or the app is closed, all recorded media up to that point is already safely on disk.
+4. **Duration Header Patching:** Chromium's MediaRecorder omits the container duration in the EBML header for live streams. We implement a lightweight, zero-dependency `WebmPatcher` that inserts the exact duration in milliseconds into the WebM `Info` element upon session completion, ensuring instant seeking and duration display across all media players and analysis tools.
+5. **Phase Boundary Integrity:** Per the architectural plan, full FFmpeg post-processing and multi-track re-encoding belongs strictly in Phase 14 (Export). Phase 5 focuses on high-performance, low-overhead primary recording capture.
+
+---
+
+### Architectural Collaboration Model
+Per architectural requirements, `RecordingService` (`electron/main/recording/RecordingService.ts`) does **not** merge or duplicate the responsibilities of `CaptureProvider` or `AudioProvider`:
+- **Collaborator 1 (`CaptureProvider`):** Validates and registers screen/window capture sources, enumerates displays, and tracks video capture status.
+- **Collaborator 2 (`AudioProvider`):** Manages Windows CoreAudio/WASAPI loopback sessions, verifies microphone privacy settings, and enumerates physical audio devices.
+- **Orchestrator (`RecordingService`):** Composes both providers to initialize a unified session, validates disk space and permissions (`RecordingStorage`), opens the file stream, handles chunk writes, coordinates pause/resume, cleanly finalizes the output file, and releases collaborator resources.
+

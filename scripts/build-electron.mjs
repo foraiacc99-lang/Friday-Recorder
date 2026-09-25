@@ -65,6 +65,17 @@ async function buildElectron() {
       sourcemap: isDev ? 'inline' : false,
       minify: !isDev,
     }),
+    esbuild.build({
+      entryPoints: [path.resolve(rootDir, 'electron/main/recording/index.ts')],
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+      target: 'node20',
+      external: ['electron'],
+      outfile: path.resolve(rootDir, 'dist-electron/main/recording.js'),
+      sourcemap: isDev ? 'inline' : false,
+      minify: !isDev,
+    }),
   ]);
   console.log('Electron main & preload build complete.');
 }

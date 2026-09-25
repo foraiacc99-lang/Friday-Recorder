@@ -14,6 +14,10 @@ import type {
   CaptureStartPayload,
   CaptureStatus,
   FridayBridgeApi,
+  RecordingOptions,
+  RecordingSessionInfo,
+  RecordingStatus,
+  SavedRecordingResult,
 } from '../../shared/types';
 
 /**
@@ -55,6 +59,28 @@ const bridgeApi: FridayBridgeApi = {
     },
 
     getStatus: (): Promise<AudioStatus> => ipcRenderer.invoke(IPC_CHANNELS.AUDIO.GET_STATUS),
+  },
+  recording: {
+    startRecording: (options: RecordingOptions): Promise<RecordingSessionInfo> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.START, options),
+
+    writeChunk: (sessionId: string, chunk: Uint8Array): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.WRITE_CHUNK, { sessionId, chunk }),
+
+    stopRecording: (sessionId: string, durationMs: number): Promise<SavedRecordingResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.STOP, { sessionId, durationMs }),
+
+    pauseRecording: (sessionId: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.PAUSE, { sessionId }),
+
+    resumeRecording: (sessionId: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.RESUME, { sessionId }),
+
+    getStatus: (): Promise<RecordingStatus> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.GET_STATUS),
+
+    showInFolder: (filePath: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.SHOW_IN_FOLDER, { filePath }),
   },
 };
 

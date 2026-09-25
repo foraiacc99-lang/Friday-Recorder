@@ -19,10 +19,20 @@ export const IPC_CHANNELS = {
     STOP: 'audio:stop',
     GET_STATUS: 'audio:getStatus',
   },
+  RECORDING: {
+    START: 'recording:start',
+    WRITE_CHUNK: 'recording:writeChunk',
+    STOP: 'recording:stop',
+    PAUSE: 'recording:pause',
+    RESUME: 'recording:resume',
+    GET_STATUS: 'recording:getStatus',
+    SHOW_IN_FOLDER: 'recording:showInFolder',
+  },
 } as const;
 
 export type IpcChannel =
   | (typeof IPC_CHANNELS.APP)[keyof typeof IPC_CHANNELS.APP]
   | (typeof IPC_CHANNELS.CAPTURE)[keyof typeof IPC_CHANNELS.CAPTURE]
-  | (typeof IPC_CHANNELS.AUDIO)[keyof typeof IPC_CHANNELS.AUDIO];
+  | (typeof IPC_CHANNELS.AUDIO)[keyof typeof IPC_CHANNELS.AUDIO]
+  | (typeof IPC_CHANNELS.RECORDING)[keyof typeof IPC_CHANNELS.RECORDING];
 

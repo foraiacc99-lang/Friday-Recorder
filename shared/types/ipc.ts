@@ -12,6 +12,13 @@ import type {
   AudioStatus,
 } from './audio';
 
+import type {
+  RecordingOptions,
+  RecordingSessionInfo,
+  RecordingStatus,
+  SavedRecordingResult,
+} from './recording';
+
 /**
  * Strongly-typed IPC bridge contract exposed via contextBridge.
  */
@@ -35,6 +42,15 @@ export interface FridayBridgeApi {
     startSystemAudioCapture: () => Promise<AudioSessionInfo>;
     stop: (target?: AudioCaptureTarget) => Promise<void>;
     getStatus: () => Promise<AudioStatus>;
+  };
+  recording: {
+    startRecording: (options: RecordingOptions) => Promise<RecordingSessionInfo>;
+    writeChunk: (sessionId: string, chunk: Uint8Array) => Promise<void>;
+    stopRecording: (sessionId: string, durationMs: number) => Promise<SavedRecordingResult>;
+    pauseRecording: (sessionId: string) => Promise<void>;
+    resumeRecording: (sessionId: string) => Promise<void>;
+    getStatus: () => Promise<RecordingStatus>;
+    showInFolder: (filePath: string) => Promise<void>;
   };
 }
 
