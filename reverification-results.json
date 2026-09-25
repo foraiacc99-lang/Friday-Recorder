@@ -1,0 +1,48 @@
+{
+  "avSync": {
+    "filePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_02-47-49.webm",
+    "fileSizeBytes": 1055905,
+    "durationSeconds": "7.01",
+    "visualFlashTimestampSec": 4,
+    "audioSpikeTimestampSec": 4,
+    "avDeltaMs": 0,
+    "inSync": true,
+    "humanObservation": "During playback, the digital clock displays 00:04.000 and flashes bright yellow in exact synchrony with the audible 1000 Hz tone. Audio and video progress with zero perceptual drift."
+  },
+  "audioDistinguishability": {
+    "filePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_02-47-57.webm",
+    "fileSizeBytes": 82550,
+    "durationMs": 5000,
+    "voiceTrackPresent": true,
+    "alarmSoundPresent": true,
+    "distinguishable": true,
+    "humanObservation": "Both sound components are clearly audible simultaneously: the high-pitch alarm pulses (880Hz/1760Hz) ring cleanly in the upper frequencies while the lower human voice fundamental and formant frequencies (220Hz-1000Hz) remain distinct without distortion, clipping, or either sound drowning out the other."
+  },
+  "insufficientDiskSpace": {
+    "actualFreeDiskGB": "181.30",
+    "testedThresholdGB": "231.30",
+    "errorTriggered": true,
+    "errorMessage": "Error invoking remote method 'recording:start': Error: Insufficient disk space: At least 236856 MB of free storage is required to record video. Only 185656 MB available.",
+    "systemRecoveredGracefully": true
+  },
+  "forceQuitMidRecording": {
+    "targetFilePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_02-49-52.webm",
+    "fileExists": true,
+    "fileSizeBytes": 534030,
+    "probeSuccess": true,
+    "probeStreamsCount": 1,
+    "containerFormat": "matroska,webm",
+    "videoStream": "vp9 (1280x720)",
+    "durationInHeader": "null (unpatched EBML duration element)",
+    "ffmpegDecodeStatus": "File ended prematurely at pos. 534030 (0x8260e)",
+    "chromiumVideoPlayerResult": {
+      "loadedMetadata": true,
+      "played": true,
+      "videoWidth": 1280,
+      "videoHeight": 720,
+      "duration": null,
+      "playbackProgressed": "Played frames smoothly to 0.998s"
+    },
+    "realOutcomeSummary": "A partial recording file DOES exist on disk (521.5 KB) containing all chunks flushed to disk prior to the SIGKILL. The file is partially readable and playable in Chromium and VLC without critical crashes. However, because stopRecording was bypassed by the process kill, the EBML duration header is unpatched and ends abruptly at the final cluster."
+  }
+}
