@@ -6,7 +6,8 @@ import { RecordingCountdown } from '../recorder/RecordingCountdown';
 import { ActiveRecordingBar } from '../recorder/ActiveRecordingBar';
 import { SavedRecordingModal } from '../recorder/SavedRecordingModal';
 import { MediaImportPanel } from '../media/MediaImportPanel';
-import type { RecordingFps, RecordingOptions, RecordingResolution } from '../../shared/types';
+import { EditorScreen } from '../editor/EditorScreen';
+import type { ImportedMediaItem, RecordingFps, RecordingOptions, RecordingResolution } from '../../shared/types';
 import './App.css';
 
 export default function App() {
@@ -18,8 +19,9 @@ export default function App() {
   const [fps, setFps] = useState<RecordingFps>(60);
   const [micEnabled, setMicEnabled] = useState<boolean>(true);
   const [systemAudioEnabled, setSystemAudioEnabled] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'recorder' | 'media-import' | 'preview-tools'>('recorder');
+  const [activeTab, setActiveTab] = useState<'recorder' | 'media-import' | 'preview-tools' | 'editor'>('recorder');
   const [importedPathFromRecording, setImportedPathFromRecording] = useState<string | null>(null);
+  const [selectedMediaForEditor, setSelectedMediaForEditor] = useState<ImportedMediaItem | null>(null);
 
   // Phase 3 Screen Capture Hook
   const {
@@ -145,6 +147,16 @@ export default function App() {
 
   const isRecordingActive = recordingState === 'recording' || recordingState === 'paused';
 
+  // Phase 7: GPU Video Preview Editor Screen
+  if (activeTab === 'editor' && selectedMediaForEditor) {
+    return (
+      <EditorScreen
+        mediaItem={selectedMediaForEditor}
+        onBackToMedia={() => setActiveTab('media-import')}
+      />
+    );
+  }
+
   return (
     <div className="app-container">
       {/* 3-2-1 Fullscreen Countdown Overlay */}
@@ -265,6 +277,16 @@ export default function App() {
           >
             🎛️ Diagnostics & Capture Tools
           </button>
+          {selectedMediaForEditor && (
+            <button
+              type="button"
+              id="tab-editor-preview"
+              className={`segmented-btn ${activeTab === 'editor' ? 'active' : ''}`}
+              onClick={() => setActiveTab('editor')}
+            >
+              🎬 Editor Preview
+            </button>
+          )}
         </div>
 
         {/* TAB 1: PHASE 5 RECORDING STUDIO FLOW */}
@@ -499,7 +521,13 @@ export default function App() {
 
         {/* TAB 2: PHASE 6 MEDIA IMPORT & LIBRARY */}
         {activeTab === 'media-import' && (
-          <MediaImportPanel externalRecordingPath={importedPathFromRecording} />
+          <MediaImportPanel
+            externalRecordingPath={importedPathFromRecording}
+            onSelectMedia={(item) => {
+              setSelectedMediaForEditor(item);
+              setActiveTab('editor');
+            }}
+          />
         )}
 
         {/* LIVE PREVIEW CONTAINER (Shown for Recorder & Diagnostics tabs) */}

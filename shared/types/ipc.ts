@@ -63,6 +63,7 @@ export interface FridayBridgeApi {
     remove: (id: string) => Promise<boolean>;
     checkStatus: (id: string) => Promise<MediaStatusCheckResult>;
     getPathForFile?: (file: File) => string;
+    getFileUrl: (filePath: string) => string;
   };
 }
 

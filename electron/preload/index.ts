@@ -110,6 +110,12 @@ const bridgeApi: FridayBridgeApi = {
       }
       return (file as unknown as { path?: string }).path || '';
     },
+
+    getFileUrl: (filePath: string): string => {
+      if (!filePath) return '';
+      const normalized = filePath.replace(/\\/g, '/');
+      return normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`;
+    },
   },
 };
 

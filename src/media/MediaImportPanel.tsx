@@ -272,6 +272,18 @@ export const MediaImportPanel: React.FC<MediaImportPanelProps> = ({
                       <div className="card-actions">
                         <button
                           type="button"
+                          className="card-open-editor-btn"
+                          id={`btn-open-editor-${item.id}`}
+                          title="Open video in Editor (Phase 7 Preview)"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectMedia) onSelectMedia(item);
+                          }}
+                        >
+                          🎬 Open in Editor
+                        </button>
+                        <button
+                          type="button"
                           className="card-check-btn"
                           title="Verify file existence on disk"
                           onClick={(e) => {

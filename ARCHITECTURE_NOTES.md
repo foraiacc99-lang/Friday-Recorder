@@ -199,4 +199,63 @@ Per the original 20-phase roadmap (spec section 39), Phase 6 is **Media Import**
 - Phase 6 is strictly Media Import.
 - The floating control bar and recording indicator remain logged as backlog items for future overlay and windowing phases (e.g. Phase 11 / UI Polish), preserving clean architectural separation between recording capture, media ingestion, and editor composition.
 
+---
+
+## Phase 7: Video Preview Architecture Decision (GPU WebGL Compositor)
+
+### Context
+Phase 7 implements the responsive Video Preview rendering architecture (spec sections 4, 6, and 14). This serves as the foundation for the editor workspace and all upcoming editing layers:
+- Phase 10: Canvas Dimensions & Non-Destructive Crop (viewport transform)
+- Phase 11: Dynamic Smooth Zoom & Pan (interpolated affine scale/pan transform)
+- Phase 12: Smooth Cursor Overlay & Click Effects (composited cursor coordinates)
+- Phase 13: Webcam Picture-in-Picture Overlay (secondary video stream PIP)
+
+A foundational architectural requirement of Friday Recorder is that **preview playback must NEVER require re-rendering, transcoding, or exporting a new video file**.
+
+---
+
+### Technical Evaluation & Trade-Off Matrix
+
+We evaluated two architectural strategies:
+1. **Deferred WebGL:** Use a plain HTML `<video>` element in Phase 7, and replace it with WebGL in Phase 10.
+2. **WebGL-from-the-Start:** Establish the GPU-accelerated WebGL canvas compositor pipeline directly in Phase 7, drawing the video frame 1:1 on the canvas.
+
+| Dimension | Option 1: Deferred WebGL (Plain `<video>` first) | Option 2: WebGL GPU Compositor from Phase 7 (Chosen) |
+| :--- | :--- | :--- |
+| **Architectural Disruption & Retrofit Risk** | **Severe:** In Phase 10, the `<video>` element must be ripped out, replacing controls, event listeners, frame synchronization loops, and canvas layout sizing with a completely new WebGL pipeline. | **Zero:** The WebGL context, quad geometry, texture sampler, and animation frame loop are established in Phase 7. Phases 10–13 simply update shader uniforms and composited layers on the existing canvas. |
+| **Compositing Readiness** | Cannot composite custom cursors, zoom transforms, or webcam feeds directly on a native `<video>` element without overlapping DOM elements causing sync stutter and z-index artifacts. | Native layered scene graph on GPU: base video texture, transform matrix, cursor sprites, and PIP textures composite in a single GPU pass. |
+| **Playback Performance & Zero-Copy** | Standard Chromium `<video>` rendering. | Native hardware-accelerated WebGL texture sampling via `gl.texImage2D`. High-DPI crisp letterbox scaling on modern GPUs with zero UI thread overhead. |
+| **Non-Destructive Guarantee** | Plain video playback is non-destructive, but transition to effects often pushes teams toward background re-encoding if GPU compositing was not designed in from day 1. | **100% Non-Destructive by Design:** The source file on disk is read directly via hardware decode. Transformations (crop, zoom, overlays) execute entirely within GPU vertex/fragment shaders in real time. |
+| **Frame Synchronization** | HTML5 `timeupdate` fires at coarse, non-guaranteed intervals (~4 Hz to 15 Hz), causing choppy overlays. | Uses Chromium's hardware-synchronized `requestVideoFrameCallback` locked to the display refresh rate (60 Hz) for exact presentation timestamp alignment. |
+
+---
+
+### Decision: WebGL GPU Hardware Compositor from the Start
+
+**Selected Strategy:** Option 2 (WebGL GPU Hardware Compositor from Phase 7).
+
+**Justification:**
+1. **Zero Retrofitting Debt:** By establishing the `VideoPreviewCompositor` (`src/preview/VideoPreviewCompositor.ts`) now, all subsequent editing phases (Phases 9–13) attach cleanly to pre-allocated shader uniforms and layer hooks without changing the editor screen's layout or control interface.
+2. **Multi-Layer Shader Pipeline Structure:**
+   ```
+   GPU Compositor Viewport (WebGL Canvas)
+    ├── Clear Color (Dark slate background #0a0e17)
+    ├── Affine Transform Matrix u_matrix (Zoom scale + Pan translation - Phase 11)
+    ├── Normalized Crop Bounding Rect u_cropRect (Crop discard - Phase 10)
+    ├── Base Video Layer (Uploaded via gl.texImage2D every frame - Phase 7)
+    ├── [Hook] Cursor Sprite & Ripple Overlay (Phase 12)
+    └── [Hook] Webcam PiP Sprite Layer (Phase 13)
+   ```
+3. **Explicit Confirmation of Non-Destructive Playback:**
+   The chosen architecture guarantees that:
+   - Crop (Phase 10) is a viewport/UV transform in the fragment shader.
+   - Zoom & Pan (Phase 11) is a 2D affine matrix transformation in the vertex shader.
+   - Cursor effects (Phase 12) are drawn sprites on the canvas.
+   - Webcam (Phase 13) is a secondary texture sampler.
+   **None of these operations re-render or re-encode the source video file on disk.**
+4. **Playback & Seeking Precision:**
+   - Rapid scrubbing uses non-blocking `fastSeek()` throttled via `requestAnimationFrame` to maintain 60 FPS UI fluidness without decoding bottleneck.
+   - Pausing and stationary scrubbing perform exact `video.currentTime` positioning, achieving within $\pm 1$ video frame precision ($\sim 16.6\text{ms}$ at 60 FPS).
+
+
 
