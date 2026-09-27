@@ -18,6 +18,10 @@ import type {
   RecordingStatus,
   SavedRecordingResult,
 } from './recording';
+import type {
+  ImportedMediaItem,
+  MediaStatusCheckResult,
+} from './media';
 
 /**
  * Strongly-typed IPC bridge contract exposed via contextBridge.
@@ -51,6 +55,14 @@ export interface FridayBridgeApi {
     resumeRecording: (sessionId: string) => Promise<void>;
     getStatus: () => Promise<RecordingStatus>;
     showInFolder: (filePath: string) => Promise<void>;
+  };
+  media: {
+    importDialog: () => Promise<ImportedMediaItem[]>;
+    importFile: (filePath: string) => Promise<ImportedMediaItem>;
+    list: () => Promise<ImportedMediaItem[]>;
+    remove: (id: string) => Promise<boolean>;
+    checkStatus: (id: string) => Promise<MediaStatusCheckResult>;
+    getPathForFile?: (file: File) => string;
   };
 }
 

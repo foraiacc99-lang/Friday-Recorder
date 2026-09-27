@@ -149,3 +149,54 @@ Per architectural requirements, `RecordingService` (`electron/main/recording/Rec
 - **Collaborator 2 (`AudioProvider`):** Manages Windows CoreAudio/WASAPI loopback sessions, verifies microphone privacy settings, and enumerates physical audio devices.
 - **Orchestrator (`RecordingService`):** Composes both providers to initialize a unified session, validates disk space and permissions (`RecordingStorage`), opens the file stream, handles chunk writes, coordinates pause/resume, cleanly finalizes the output file, and releases collaborator resources.
 
+---
+
+## Phase 6: Media Import Architecture Decision
+
+### Context
+Phase 6 implements the Media Import system (spec section 39), serving as the bridge between video files on disk and the upcoming project/editor systems (Phases 7+). The system enables bringing existing video files into Friday Recorder — either by browsing via native Windows file dialogs, drag-and-drop onto the window, or directly referencing recordings produced in Phase 5.
+
+We evaluated two architectural strategies for probing media and extracting thumbnails:
+1. **Renderer-Side In-Memory Probing (`<video>` Element + Canvas Snapshot)**
+2. **Native Asynchronous Node Child-Process Pipeline (`ffprobe` + `ffmpeg` + Disk Cache)**
+
+---
+
+### Technical Evaluation & Trade-off Matrix
+
+| Dimension | Option 1: Renderer In-Memory `<video>` + Canvas Snapshot | Option 2: Main Process `ffprobe` + `ffmpeg` + Caching |
+| :--- | :--- | :--- |
+| **Metadata Fidelity & Codec Coverage** | **Severely Constrained:** HTML5 `<video>` only reports `duration`, `videoWidth`, and `videoHeight`. It cannot determine precise video codecs (VP9, H.264, ProRes), audio codecs (Opus, AAC, PCM), audio channel count, audio sample rate, or container bitrates. | **Full Bitstream Inspection:** `ffprobe` extracts exact duration, resolution, stream codecs, audio channel counts, sample rates, bitrates, and container formats with 100% precision. |
+| **Format Support** | **Browser-Restricted:** Limited strictly to formats Chromium natively plays in browser contexts. Many standard production containers (e.g. MKV, ProRes QuickTime) cannot be probed. | **Universal Video Ingestion:** Probes `.webm`, `.mp4`, `.mov`, and `.mkv` with zero browser codec constraints. |
+| **UI Thread Pacing & Memory** | **High UI Thread Burden:** Loading multi-gigabyte video files into HTML5 `<video>` buffers allocates massive browser GPU/RAM memory in the renderer process and can stutter the UI. | **Zero Main/UI Thread Blocking:** Node spawns `ffprobe` and `ffmpeg` in background worker sub-processes. Metadata probing executes in ~50–150ms. |
+| **Thumbnail Generation Quality & Pacing** | **Frame 0 Blank Bias:** Renderer `<video>` often defaults to frame 0 (frequently a black leader or blank frame). Canvas readback (`ctx.drawImage` -> `canvas.toDataURL()`) occurs on the UI thread. | **Intelligent Offset Seeking:** Seeks directly to ~1.0s (or 20% for short clips) to capture representative content. Scales letterboxed to standard 480x270 thumbnail dimensions using Lanczos resampling. |
+| **Storage & Caching Lifecycle** | **Ephemeral:** Every app launch would require re-loading videos and re-drawing canvas frames, degrading library performance. | **Persistent Disk Cache (Spec §20):** Thumbnails are cached to `Documents/Friday Recorder/Cache/Thumbnails/` indexed by deterministic SHA-256 hash. Cached thumbnails are served instantaneously. |
+
+---
+
+### Decision: Native Node Child-Process Pipeline (`ffprobe` + `ffmpeg`)
+
+**Selected Strategy:** Option 2 (Native Node child-process pipeline with deterministic thumbnail caching).
+
+**Justification:**
+1. **Probing Accuracy:** `ffprobe -v quiet -print_format json -show_format -show_streams` provides authoritative video and audio stream telemetry without trusting inaccurate file extensions or browser approximations.
+2. **Non-Destructive Reference Storage (Spec Section 20):** Video files are **never** copied, cloned, or duplicated into application storage. Only metadata and small cached JPEG thumbnails (~15 KB) are maintained.
+3. **Format Matrix:**
+   - `.webm`: 100% native (VP9/VP8 video, Opus/Vorbis audio; matches Phase 5 recordings).
+   - `.mp4`: 100% supported (H.264/AVC, H.265/HEVC, AAC, MP3).
+   - `.mov`: 100% supported (QuickTime container, ProRes, H.264, AAC).
+   - `.mkv`: 100% supported (Matroska container).
+4. **Resilient Error & Missing File Handling:**
+   - Zero-byte files, non-video files, and corrupted headers are probed and rejected with friendly, explicit error messages without crashing.
+   - Files deleted or relocated on disk after import are detected via `checkStatus()` and flagged with a "File Missing" alert instead of crashing the UI.
+5. **IPC Security & Preload Isolation:** All file path reading from drag-and-drop operations utilizes Electron 34's secure `webUtils.getPathForFile(file)`. IPC handlers validate sender frames and sanitize input parameters.
+
+---
+
+### Roadmap Backlog Note: Floating Control Bar & Recording Indicator
+
+Per the original 20-phase roadmap (spec section 39), Phase 6 is **Media Import**. A previous proposal suggested building a "Floating Control Bar, Recording Indicator & Full Renderer UI Integration" as Phase 6. In accordance with the original roadmap order:
+- Phase 6 is strictly Media Import.
+- The floating control bar and recording indicator remain logged as backlog items for future overlay and windowing phases (e.g. Phase 11 / UI Polish), preserving clean architectural separation between recording capture, media ingestion, and editor composition.
+
+

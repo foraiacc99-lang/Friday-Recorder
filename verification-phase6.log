@@ -1,0 +1,66 @@
+=====================================================
+FRIDAY RECORDER — PHASE 6: END-TO-END ELECTRON UI VERIFICATION
+=====================================================
+
+  ✅ PASS: Recordings directory located at: C:\Users\Swaraj Talekar\OneDrive\Documents\Friday Recorder\Recordings
+  ✅ PASS: Discovered 37 real Phase 5 recordings
+  ✅ PASS: Discovered 16 valid Phase 5 recordings with size > 5KB
+  Using real recording: "Friday_Recording_2026-09-26_02-29-00.webm" (412.4 KB)
+
+--- TEST 1: TAB NAVIGATION & INITIAL UI STATE ---
+  ✅ PASS: Media Library & Import tab exists
+  ✅ PASS: MediaImportPanel rendered after tab click
+  ✅ PASS: Drag-and-drop zone rendered
+  ✅ PASS: Import Video button rendered
+  ✅ PASS: Manual path input form rendered
+  ✅ PASS: Empty state rendered when no media imported
+
+--- TEST 2: IMPORT REAL RECORDING VIA DIRECT PATH ---
+  ✅ PASS: Media card rendered in UI
+  ✅ PASS: Card filename matches: Friday_Recording_2026-09-26_02-29-00.webm
+  ✅ PASS: Card contains thumbnail <img> element
+  ✅ PASS: Thumbnail is valid JPEG base64 Data URI
+  Thumbnail preview in UI: Valid base64 JPEG (00:05, 1920×1080, 60 FPS, VP9, OPUS)
+  Card badges: ["1920×1080","60 FPS","VP9","OPUS"]
+  Card filesize: 412 KB
+  Raw ffprobe comparison: {"codec_name":"vp9","width":1920,"height":1080,"r_frame_rate":"1000/1"}
+  ✅ PASS: Resolution badge matches ffprobe
+  ✅ PASS: Codec badge matches ffprobe
+
+--- TEST 3: DRAG AND DROP IMPORT SIMULATION ---
+  ✅ PASS: Drag-drop imported sample: drag_drop_sample.webm
+  ✅ PASS: Total media cards in UI after drag-drop: 2
+
+--- TEST 4: ERROR HANDLING FOR INVALID / CORRUPTED FILES ---
+  ✅ PASS: Error banner displayed for 0-byte file
+  ✅ PASS: Error message clear: "⚠️Import Error: Error invoking remote method 'media:importPath': Error: Cannot import empty file: "empty.webm" is 0 bytes.✕"
+  ✅ PASS: Error banner displayed for corrupted file
+  Corrupted file error message displayed: "⚠️Import Error: Error invoking remote method 'media:importPath': Error: Cannot import corrupted or unreadable video file "corrupt.mp4": [mov,mp4,m4a,3gp,3g2,mj2 @ 0000018792ae15c0] moov atom not found
+C:\Users\Swaraj Talekar\OneDrive\Desktop\Friday Recorder\tests\temp_e2e_phase6\corrupt.mp4: Invalid data found when processing input✕"
+  ✅ PASS: Error banner displayed for unsupported format (.txt)
+  ✅ PASS: Unsupported format error clear: "⚠️Import Error: Error invoking remote method 'media:importPath': Error: Unsupported video format ".txt". Supported formats are: .webm, .mp4, .mov, .mkv.✕"
+
+--- TEST 5: DELETED / MOVED SOURCE FILE HANDLING IN UI ---
+  ✅ PASS: Deleted dragTestFile from disk to simulate moved/missing file
+  ✅ PASS: Found media card for deleted file
+  ✅ PASS: Card received "file-missing" CSS class
+  ✅ PASS: Card displayed "FILE MISSING" badge
+  ✅ PASS: Card displayed clear file missing warning
+  Graceful missing file indication verified in UI without crash.
+
+--- TEST 6: UI RESPONSIVENESS / EVENT LOOP PACING ---
+  Probe Duration: 0.60 ms
+  Max UI Event Loop Jitter: 0.00 ms
+  ✅ PASS: UI Event loop remained responsive (< 100ms jitter, actual: 0.00ms)
+
+--- TEST 7: ZERO FILE DUPLICATION CHECK ---
+  ✅ PASS: Zero video files copied into application cache (found 0)
+
+--- TEST 8: REFERENCE REMOVAL TEST ---
+  ✅ PASS: Remove button clicked
+  ✅ PASS: Card removed from UI library
+  ✅ PASS: Original video file on disk remains intact (non-destructive removal)
+
+=====================================================
+ALL E2E ELECTRON VERIFICATION TESTS PASSED: 32 PASSED, 0 FAILED
+=====================================================

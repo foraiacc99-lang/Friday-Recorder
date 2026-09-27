@@ -5,6 +5,7 @@ import { useRecordingPipeline } from '../recorder/useRecordingPipeline';
 import { RecordingCountdown } from '../recorder/RecordingCountdown';
 import { ActiveRecordingBar } from '../recorder/ActiveRecordingBar';
 import { SavedRecordingModal } from '../recorder/SavedRecordingModal';
+import { MediaImportPanel } from '../media/MediaImportPanel';
 import type { RecordingFps, RecordingOptions, RecordingResolution } from '../../shared/types';
 import './App.css';
 
@@ -17,7 +18,8 @@ export default function App() {
   const [fps, setFps] = useState<RecordingFps>(60);
   const [micEnabled, setMicEnabled] = useState<boolean>(true);
   const [systemAudioEnabled, setSystemAudioEnabled] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'recorder' | 'preview-tools'>('recorder');
+  const [activeTab, setActiveTab] = useState<'recorder' | 'media-import' | 'preview-tools'>('recorder');
+  const [importedPathFromRecording, setImportedPathFromRecording] = useState<string | null>(null);
 
   // Phase 3 Screen Capture Hook
   const {
@@ -152,15 +154,23 @@ export default function App() {
 
       {/* Saved Recording Confirmation Modal */}
       {savedResult && (
-        <SavedRecordingModal result={savedResult} onClose={clearSavedResult} />
+        <SavedRecordingModal
+          result={savedResult}
+          onClose={clearSavedResult}
+          onImportToLibrary={(filePath) => {
+            setImportedPathFromRecording(filePath);
+            setActiveTab('media-import');
+            clearSavedResult();
+          }}
+        />
       )}
 
       <main className="foundation-card">
         <header className="header">
-          <div className="status-pill">Phase 5: Recording Pipeline</div>
+          <div className="status-pill">Phase 6: Media Import</div>
           <h1 className="title">Friday Recorder — v{version}</h1>
           <p className="subtitle">
-            Desktop Screen, Microphone & System Audio Recording Pipeline
+            Desktop Recording & Media Import Subsystem
           </p>
         </header>
 
@@ -239,6 +249,14 @@ export default function App() {
             onClick={() => setActiveTab('recorder')}
           >
             ⏺️ New Recording Studio
+          </button>
+          <button
+            type="button"
+            id="tab-media-import"
+            className={`segmented-btn ${activeTab === 'media-import' ? 'active' : ''}`}
+            onClick={() => setActiveTab('media-import')}
+          >
+            📁 Media Library & Import
           </button>
           <button
             type="button"
@@ -479,8 +497,14 @@ export default function App() {
           </section>
         )}
 
-        {/* LIVE PREVIEW CONTAINER */}
-        <section className="section-card">
+        {/* TAB 2: PHASE 6 MEDIA IMPORT & LIBRARY */}
+        {activeTab === 'media-import' && (
+          <MediaImportPanel externalRecordingPath={importedPathFromRecording} />
+        )}
+
+        {/* LIVE PREVIEW CONTAINER (Shown for Recorder & Diagnostics tabs) */}
+        {activeTab !== 'media-import' && (
+          <section className="section-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
             <h2 className="section-title" style={{ margin: 0 }}>
               🖥️ Live Screen Video Preview
@@ -552,8 +576,9 @@ export default function App() {
             </div>
           )}
         </section>
+        )}
 
-        {/* TAB 2: DIAGNOSTICS & INDEPENDENT TEST TOOLS */}
+        {/* TAB 3: DIAGNOSTICS & INDEPENDENT TEST TOOLS */}
         {activeTab === 'preview-tools' && (
           <>
             {/* AUDIO TOOLS & METERS */}

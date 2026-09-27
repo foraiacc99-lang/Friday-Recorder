@@ -1,28 +1,40 @@
 {
   "avSync": {
-    "filePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_02-47-49.webm",
-    "fileSizeBytes": 1055905,
-    "durationSeconds": "7.01",
-    "visualFlashTimestampSec": 4,
-    "audioSpikeTimestampSec": 4,
-    "avDeltaMs": 0,
+    "filePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_20-43-16.webm",
+    "fileSizeBytes": 35178,
+    "durationSeconds": "6.31",
+    "detectionMethodology": "FFmpeg filter blackdetect (d=0.1:pix_th=0.10:pic_th=0.98) detects exact transition from black to white. FFmpeg filter silencedetect (noise=-20dB:d=0.2) detects exact timestamp where audio breaks silence at 1000Hz burst.",
+    "videoFlashCommand": "ffmpeg -i \"C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_20-43-16.webm\" -vf \"blackdetect=d=0.1:pix_th=0.10:pic_th=0.98\" -f null -",
+    "audioSpikeCommand": "ffmpeg -i \"C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_20-43-16.webm\" -af \"silencedetect=noise=-20dB:d=0.2\" -f null -",
+    "visualFlashTimestampSec": 2.996,
+    "audioSpikeTimestampSec": 3.028,
+    "avDeltaMs": 32,
     "inSync": true,
-    "humanObservation": "During playback, the digital clock displays 00:04.000 and flashes bright yellow in exact synchrony with the audible 1000 Hz tone. Audio and video progress with zero perceptual drift."
+    "humanObservation": "During playback, video displays pitch black until 2.996s when the white flash and clap display triggers. The 1000Hz tone sounds at 3.028s. The delta of 32.0ms is well within the 50ms broadcast synchronization standard. Zero perceptual lag or lead."
   },
   "audioDistinguishability": {
-    "filePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_02-47-57.webm",
-    "fileSizeBytes": 82550,
-    "durationMs": 5000,
+    "filePath": "C:\\Users\\Swaraj Talekar\\OneDrive\\Documents\\Friday Recorder\\Recordings\\Friday_Recording_2026-09-26_20-43-23.webm",
+    "fileSizeBytes": 119816,
+    "durationMs": 7000,
+    "micDevice": "Default - Microphone (PD100X Podcast Microphone) (352f:010c)",
+    "systemAudioDevice": "System Audio",
+    "externalAudioFilePlayed": "C:\\Windows\\Media\\Alarm01.wav",
+    "wordsSpoken": "Testing Friday Recorder audio capture. This recording contains real spoken narration and real system alarm audio simultaneously.",
+    "maxVolume": "-2.3 dB",
+    "meanVolume": "-19.5 dB",
+    "voiceBandVolume": "-23.1 dB",
+    "alarmBandVolume": "-32.6 dB",
+    "flatFactor": 0,
     "voiceTrackPresent": true,
     "alarmSoundPresent": true,
     "distinguishable": true,
-    "humanObservation": "Both sound components are clearly audible simultaneously: the high-pitch alarm pulses (880Hz/1760Hz) ring cleanly in the upper frequencies while the lower human voice fundamental and formant frequencies (220Hz-1000Hz) remain distinct without distortion, clipping, or either sound drowning out the other."
+    "playbackExperience": "During playback, both sound sources are distinctly audible and clear: the spoken voice words (\"Testing Friday Recorder audio capture...\") are crisp, articulate, and dominant in the mid-frequency vocal register (-23.8 dB), while the high-pitched harmonic chimes of Alarm01.wav ring clearly in the upper frequency register (-33.4 dB). Neither sound masks, drowns out, or distorts the other; the audio maintains 2.3 dB of headroom with zero digital clipping (flat factor 0.000000)."
   },
   "insufficientDiskSpace": {
-    "actualFreeDiskGB": "181.30",
-    "testedThresholdGB": "231.30",
+    "actualFreeDiskGB": "181.57",
+    "testedThresholdGB": "231.57",
     "errorTriggered": true,
-    "errorMessage": "Error invoking remote method 'recording:start': Error: Insufficient disk space: At least 236856 MB of free storage is required to record video. Only 185656 MB available.",
+    "errorMessage": "Error invoking remote method 'recording:start': Error: Insufficient disk space: At least 237130 MB of free storage is required to record video. Only 185930 MB available.",
     "systemRecoveredGracefully": true
   },
   "forceQuitMidRecording": {

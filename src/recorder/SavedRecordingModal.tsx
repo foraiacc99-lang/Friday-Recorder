@@ -4,9 +4,14 @@ import type { SavedRecordingResult } from '../../shared/types';
 interface SavedRecordingModalProps {
   result: SavedRecordingResult;
   onClose: () => void;
+  onImportToLibrary?: (filePath: string) => void;
 }
 
-export const SavedRecordingModal: React.FC<SavedRecordingModalProps> = ({ result, onClose }) => {
+export const SavedRecordingModal: React.FC<SavedRecordingModalProps> = ({
+  result,
+  onClose,
+  onImportToLibrary,
+}) => {
   const [copied, setCopied] = useState<boolean>(false);
 
   const formatFileSize = (bytes: number): string => {
@@ -108,10 +113,21 @@ export const SavedRecordingModal: React.FC<SavedRecordingModalProps> = ({ result
 
         {/* Footer buttons */}
         <div className="saved-modal-footer">
+          {onImportToLibrary && (
+            <button
+              type="button"
+              id="btn-import-saved"
+              className="btn btn-primary btn-block"
+              style={{ marginBottom: '0.625rem' }}
+              onClick={() => onImportToLibrary(result.filePath)}
+            >
+              📥 Import into Media Library
+            </button>
+          )}
           <button
             type="button"
             id="btn-new-recording"
-            className="btn btn-primary btn-block"
+            className="btn btn-secondary btn-block"
             onClick={onClose}
           >
             🔄 New Recording

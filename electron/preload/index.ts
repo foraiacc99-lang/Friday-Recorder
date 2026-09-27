@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { IPC_CHANNELS } from '../../shared/events';
 import type {
   AudioCaptureTarget,
@@ -14,6 +14,8 @@ import type {
   CaptureStartPayload,
   CaptureStatus,
   FridayBridgeApi,
+  ImportedMediaItem,
+  MediaStatusCheckResult,
   RecordingOptions,
   RecordingSessionInfo,
   RecordingStatus,
@@ -81,6 +83,33 @@ const bridgeApi: FridayBridgeApi = {
 
     showInFolder: (filePath: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.SHOW_IN_FOLDER, { filePath }),
+  },
+  media: {
+    importDialog: (): Promise<ImportedMediaItem[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MEDIA.IMPORT_DIALOG),
+
+    importFile: (filePath: string): Promise<ImportedMediaItem> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MEDIA.IMPORT_PATH, { filePath }),
+
+    list: (): Promise<ImportedMediaItem[]> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MEDIA.LIST),
+
+    remove: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MEDIA.REMOVE, { id }),
+
+    checkStatus: (id: string): Promise<MediaStatusCheckResult> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MEDIA.CHECK_STATUS, { id }),
+
+    getPathForFile: (file: File): string => {
+      try {
+        if (webUtils && typeof webUtils.getPathForFile === 'function') {
+          return webUtils.getPathForFile(file);
+        }
+      } catch {
+        // Fallback to legacy file.path if webUtils throws
+      }
+      return (file as unknown as { path?: string }).path || '';
+    },
   },
 };
 

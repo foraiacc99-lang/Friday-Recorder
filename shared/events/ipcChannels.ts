@@ -28,11 +28,19 @@ export const IPC_CHANNELS = {
     GET_STATUS: 'recording:getStatus',
     SHOW_IN_FOLDER: 'recording:showInFolder',
   },
+  MEDIA: {
+    IMPORT_DIALOG: 'media:importDialog',
+    IMPORT_PATH: 'media:importPath',
+    LIST: 'media:list',
+    REMOVE: 'media:remove',
+    CHECK_STATUS: 'media:checkStatus',
+  },
 } as const;
 
 export type IpcChannel =
   | (typeof IPC_CHANNELS.APP)[keyof typeof IPC_CHANNELS.APP]
   | (typeof IPC_CHANNELS.CAPTURE)[keyof typeof IPC_CHANNELS.CAPTURE]
   | (typeof IPC_CHANNELS.AUDIO)[keyof typeof IPC_CHANNELS.AUDIO]
-  | (typeof IPC_CHANNELS.RECORDING)[keyof typeof IPC_CHANNELS.RECORDING];
+  | (typeof IPC_CHANNELS.RECORDING)[keyof typeof IPC_CHANNELS.RECORDING]
+  | (typeof IPC_CHANNELS.MEDIA)[keyof typeof IPC_CHANNELS.MEDIA];
 
