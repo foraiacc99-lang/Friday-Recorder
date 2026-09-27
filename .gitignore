@@ -30,3 +30,8 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Test media artifacts
+large_*
+*.mp4
+tests/temp_*
